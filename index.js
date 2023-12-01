@@ -25,15 +25,31 @@ app.use(session({
   saveUninitialized: false
   }));
 
+
+  const auth = (req, res, next)=>{
+    if(!req.session.user_id){
+      return res.redirect('/login');
+    }
+    next();
+  };
+
+  const ghost = (req, res, next) => {
+    if(req.session.user_id){
+      return res.redirect('/admin');
+    }
+    next();
+  }
+  
+  
 app.get('/', (req, res) => {
   res.send('homepage');
 })
 
-app.get('/register', (req, res) => {
+app.get('/register', ghost, (req, res) => {
   res.render('register');
 });
 
-app.post('/register', async(req, res) => {
+app.post('/register', ghost, async(req, res) => {
   const { username, password } = req.body;
   const hashPassword = bcrypt.hashSync(password, 10);
   const user = new User({
@@ -44,7 +60,7 @@ app.post('/register', async(req, res) => {
   res.redirect('/');
 });
 
-app.get('/login', (req, res) => {
+app.get('/login', ghost, (req, res) => {
   res.render('login');
 });
 app.post('/login', async (req, res) => {
@@ -63,19 +79,22 @@ app.post('/login', async (req, res) => {
   }
 });
 
-app.post('/logout', (req, res) => {
+app.post('/logout', auth, (req, res) => {
   req.session.destroy(() => {
     res.redirect('/login');
   });
 });
 
 
-app.get('/admin', (req, res) => {
+app.get('/admin', auth, (req, res) => {
   if(!req.session.user_id){
     res.redirect('/login');
   }
   res.render('admin');
-})
+});
+app.get('/profile/settings', auth, (req, res) => {
+  res.send('Profile Setting' + req.session.user_id);
+});
 
 app.listen(8080, () => {
   console.log('Example app listen on http://localhost:8080');
